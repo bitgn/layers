@@ -1,0 +1,60 @@
+
+
+
+
+
+
+* Event Store Layer
+
+Event store layer is an implementation of append-only log which also
+maintains indexes all messages by their stream name. It is frequently
+used to implement _Aggregates with Event Sourcing_ pattern.
+
+This design document outlines Event Store version 1, without any
+optimizations to reduce storage space.
+
+** Key ranges
+
+We designate following key ranges:
+
+| Prefix | Description                   |
+|      0 | Settings for this Event Store |
+|      1 | Global append-only log        |
+|      2 | Stream storage                |
+
+** Methods 
+
+*** AppendToStream
+
+Arguments:
+- stream name (string)
+- stream version (long) - expected stream version, -1 to skip version check
+- events (list of byte[]) - message values
+
+*** ReadFromStream
+
+Arguments:
+
+- stream name (string)
+- starting from (long)
+- max count (int)
+
+returns: list of stream data
+
+*** ReadAll
+
+Arguments:
+
+- starting from (long)
+- max count (int)
+
+returns: list of stream data
+
+*** GetStoreVersion
+
+Returns: store version (long)
+
+
+
+
+
