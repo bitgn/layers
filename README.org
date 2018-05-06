@@ -58,3 +58,11 @@ Returns: store version (long)
 
 
 
+
+
+* Language-specific implementations
+
+** .NET
+
+.NET Methods are to be implemented as ~async~ returning ~Task~ and
+accepting ~CancellationToken~ as the last optional parameter.
