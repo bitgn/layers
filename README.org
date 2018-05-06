@@ -1,14 +1,18 @@
-
-
-
-
-
-
 * Event Store Layer
 
 Event store layer is an implementation of append-only log which also
 maintains indexes all messages by their stream name. It is frequently
 used to implement _Aggregates with Event Sourcing_ pattern.
+
+Key requirements:
+
+- large messages are split into chunks;
+- global stream and event streams are changed within a single
+  transaction;
+- Events within a stream are stored by an incrementing version number;
+- Events in the global stream are stored by the version stamp.
+
+Global event range 
 
 This design document outlines Event Store version 1, without any
 optimizations to reduce storage space.
@@ -17,10 +21,10 @@ optimizations to reduce storage space.
 
 We designate following key ranges:
 
-| Prefix | Description                   |
-|      0 | Settings for this Event Store |
-|      1 | Global append-only log        |
-|      2 | Stream storage                |
+| Prefix | Description                                                   |
+|      0 | Settings for this Event Store                                 |
+|      1 | All events ordered by the version stamp                       |
+|      2 | Events stored by streams and ordered by version within stream |
 
 ** Methods 
 
