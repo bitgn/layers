@@ -1,0 +1,22 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Bitgn.Layers", "Bitgn.Layers\Bitgn.Layers.csproj", "{DEC867A3-6D3D-49A0-8CA1-942BDFE0CC7D}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Bitgn.Layers.Tests", "Bitgn.Layers.Tests\Bitgn.Layers.Tests.csproj", "{546A55C6-D489-4E0E-B479-87596370136F}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{DEC867A3-6D3D-49A0-8CA1-942BDFE0CC7D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{DEC867A3-6D3D-49A0-8CA1-942BDFE0CC7D}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{DEC867A3-6D3D-49A0-8CA1-942BDFE0CC7D}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{DEC867A3-6D3D-49A0-8CA1-942BDFE0CC7D}.Release|Any CPU.Build.0 = Release|Any CPU
+		{546A55C6-D489-4E0E-B479-87596370136F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{546A55C6-D489-4E0E-B479-87596370136F}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{546A55C6-D489-4E0E-B479-87596370136F}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{546A55C6-D489-4E0E-B479-87596370136F}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+EndGlobal
