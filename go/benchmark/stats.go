@@ -11,7 +11,7 @@ import (
 )
 
 const (
-	frequencySec = 6
+	frequencySec = 5
 )
 
 var (
