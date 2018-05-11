@@ -1,2 +1,3 @@
 *.tsv
 compile.sh
+benchmark-aws
