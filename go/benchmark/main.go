@@ -39,7 +39,7 @@ func main() {
 			go benchmark(ms, db, benchSimple)
 		}
 
-		stats(ms)
+		stats(ms, db)
 	case "es-append":
 
 		ms := make(chan metrics, 200000)
@@ -47,7 +47,7 @@ func main() {
 		for i := 0; i < *actors; i++ {
 			go benchmark(ms, db, benchEventStoreAppends)
 		}
-		stats(ms)
+		stats(ms, db)
 	default:
 		help()
 		return

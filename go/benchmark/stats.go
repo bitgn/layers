@@ -3,10 +3,10 @@ package main
 import (
 	"flag"
 	"fmt"
-	"log"
 	"os"
 	"time"
 
+	"github.com/apple/foundationdb/bindings/go/src/fdb"
 	"github.com/codahale/hdrhistogram"
 )
 
@@ -18,16 +18,6 @@ var (
 	statsFile = flag.String("stats", "stats.tsv", "statistics file")
 )
 
-func mustOpenFile(name string) *os.File {
-	f, err := os.OpenFile(name, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	fmt.Fprintf(f, "# %s args: %s\n", time.Now().Format("2006-01-02 15:04:05"), os.Args[1:])
-	return f
-}
-
 func printLine(f *os.File, args ...interface{}) {
 	for i, v := range args {
 		if i > 0 {
@@ -38,14 +28,14 @@ func printLine(f *os.File, args ...interface{}) {
 	f.WriteString("\n")
 }
 
-func stats(ms chan metrics) {
+func stats(ms chan metrics, db fdb.Database) {
 	freq := time.Duration(frequencySec) * time.Second
 	timer := time.NewTicker(freq).C
 	latencyMs := hdrhistogram.New(0, 50000, 3)
 
 	begin := time.Now()
 
-	f := mustOpenFile(*statsFile)
+	f := mustOpenJournal(db)
 	defer f.Close()
 	printLine(f, "Seconds", "TxTotal", "TxDelta", "ErrDelta", "Hz", "P50", "P90", "P99", "P999", "100")
 
