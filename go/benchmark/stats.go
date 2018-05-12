@@ -10,12 +10,8 @@ import (
 	"github.com/codahale/hdrhistogram"
 )
 
-const (
-	frequencySec = 5
-)
-
 var (
-	statsFile = flag.String("stats", "stats.tsv", "statistics file")
+	frequencySec = flag.Int64("frequency", 1, "reporting frequency")
 )
 
 func printLine(f *os.File, args ...interface{}) {
@@ -29,7 +25,7 @@ func printLine(f *os.File, args ...interface{}) {
 }
 
 func stats(ms chan metrics, db fdb.Database) {
-	freq := time.Duration(frequencySec) * time.Second
+	freq := time.Duration(*frequencySec) * time.Second
 	timer := time.NewTicker(freq).C
 	latencyMs := hdrhistogram.New(0, 50000, 3)
 
@@ -51,7 +47,7 @@ func stats(ms chan metrics, db fdb.Database) {
 		case <-timer:
 
 			secTotal := int64(time.Since(begin).Seconds())
-			hz := int(txDelta / frequencySec)
+			hz := int(txDelta / *frequencySec)
 
 			fmt.Printf("%8d %7d %10d %7d %8d %8d %8d\n",
 				secTotal, hz, txTotal, errTotal,
