@@ -26,6 +26,17 @@ func printLine(f *os.File, args ...interface{}) {
 	f.WriteString("\n")
 }
 
+func stateToString(name string) string {
+	switch name {
+	case "healthy_repartitioning":
+		return "hr"
+	case "healthy":
+		return "hlth"
+	default:
+		return name
+	}
+}
+
 func stats(ms chan metrics, db fdb.Database) {
 	freq := time.Duration(*frequencySec) * time.Second
 	timer := time.NewTicker(freq).C
@@ -35,9 +46,9 @@ func stats(ms chan metrics, db fdb.Database) {
 
 	f := createJournal(db)
 	defer f.Close()
-	printLine(f, "Seconds", "TxTotal", "TxDelta", "ErrDelta", "Hz", "P50", "P90", "P99", "P999", "P100", "Partitions", "KVTotal", "Disk")
+	printLine(f, "Seconds", "TxTotal", "TxDelta", "ErrDelta", "Hz", "P50", "P90", "P99", "P999", "P100", "Partitions", "KVTotal", "Disk", "Move", "State")
 
-	fmt.Println("     Sec      Hz      Total     Err   P90 ms   P99 ms   MAX ms   Part   KV MiB  Disk MiB")
+	fmt.Println("     Sec      Hz      Total     Err   P90 ms   P99 ms   MAX ms   Part   KV MiB  Disk MiB   Move  State")
 
 	var (
 		txTotal, txDelta   int64
@@ -54,16 +65,21 @@ func stats(ms chan metrics, db fdb.Database) {
 
 			st, err := getStats(db)
 
-			var kvTotal, partitions, diskTotal int
+			var kvTotal, partitions, diskTotal, inFlight int
+			//var moving int
+			var state string
 			if err == nil {
 				partitions = st.Cluster.Data.PartitionsCount
 				kvTotal = st.Cluster.Data.TotalKvSizeBytes / 1024 / 1024
 				diskTotal = st.Cluster.Data.TotalDiskUsedBytes / 1024 / 1024
+				state = stateToString(st.Cluster.Data.State.Name)
+				inFlight = st.Cluster.Data.MovingData.InFlightBytes / 1024 / 1024
+
 			} else {
 				log.Println(err)
 			}
 
-			fmt.Printf("%8d %7d %10d %7d %8d %8d %8d %6d %8d %9d\n",
+			fmt.Printf("%8d %7d %10d %7d %8d %8d %8d %6d %8d %9d %6d %6s\n",
 				secTotal, hz, txTotal, errTotal,
 				latencyMs.ValueAtQuantile(90),
 				latencyMs.ValueAtQuantile(99),
@@ -71,6 +87,8 @@ func stats(ms chan metrics, db fdb.Database) {
 				partitions,
 				kvTotal,
 				diskTotal,
+				inFlight,
+				state,
 			)
 			printLine(f, secTotal,
 				txTotal, txDelta,
@@ -83,6 +101,8 @@ func stats(ms chan metrics, db fdb.Database) {
 				partitions,
 				kvTotal,
 				diskTotal,
+				inFlight,
+				state,
 			)
 			// TODO: gather cluster size
 
