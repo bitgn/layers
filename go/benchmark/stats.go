@@ -46,9 +46,16 @@ func stats(ms chan metrics, db fdb.Database) {
 
 	f := createJournal(db)
 	defer f.Close()
-	printLine(f, "Seconds", "TxTotal", "TxDelta", "ErrDelta", "Hz", "P50", "P90", "P99", "P999", "P100", "Partitions", "KVTotal", "Disk", "Move", "State")
+	printLine(f, "Seconds", "TxTotal", "TxDelta", "ErrDelta", "Hz", "P50", "P90", "P99", "P999", "P100", "Partitions", "KVTotal", "Disk", "Move", "Conflicted", "State")
 
-	fmt.Println("     Sec      Hz      Total     Err   P90 ms   P99 ms   MAX ms   Part   KV MiB  Disk MiB   Move  State")
+	fmt.Println("     Sec      Hz      Total     Err   P90 ms   P99 ms   MAX ms   Part   KV MiB  Disk MiB   Move  Conflict State")
+
+	boot, err := getStats(db)
+	if err != nil {
+		log.Fatalln("Failed to get fdb state", err)
+	}
+
+	conflictedCounter := boot.Cluster.Workload.Transactions.Conflicted.Counter
 
 	var (
 		txTotal, txDelta   int64
@@ -65,7 +72,7 @@ func stats(ms chan metrics, db fdb.Database) {
 
 			st, err := getStats(db)
 
-			var kvTotal, partitions, diskTotal, inFlight int
+			var kvTotal, partitions, diskTotal, inFlight, conflictDelta int
 			//var moving int
 			var state string
 			if err == nil {
@@ -75,11 +82,14 @@ func stats(ms chan metrics, db fdb.Database) {
 				state = stateToString(st.Cluster.Data.State.Name)
 				inFlight = st.Cluster.Data.MovingData.InFlightBytes / 1024 / 1024
 
+				c := st.Cluster.Workload.Transactions.Conflicted.Counter
+				conflictDelta, conflictedCounter = c-conflictedCounter, c
+
 			} else {
 				log.Println(err)
 			}
 
-			fmt.Printf("%8d %7d %10d %7d %8d %8d %8d %6d %8d %9d %6d %6s\n",
+			fmt.Printf("%8d %7d %10d %7d %8d %8d %8d %6d %8d %9d %6d %6d %6s\n",
 				secTotal, hz, txTotal, errTotal,
 				latencyMs.ValueAtQuantile(90),
 				latencyMs.ValueAtQuantile(99),
@@ -88,6 +98,7 @@ func stats(ms chan metrics, db fdb.Database) {
 				kvTotal,
 				diskTotal,
 				inFlight,
+				conflictDelta,
 				state,
 			)
 			printLine(f, secTotal,
@@ -102,6 +113,7 @@ func stats(ms chan metrics, db fdb.Database) {
 				kvTotal,
 				diskTotal,
 				inFlight,
+				conflictDelta,
 				state,
 			)
 			// TODO: gather cluster size
