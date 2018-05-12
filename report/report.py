@@ -32,9 +32,9 @@ df = df.drop(df.index[0])
 
 
 fig, ax = plt.subplots(1)
-fig.suptitle("Thoughput over time")
-ax.set_ylabel("Throughput Hz")
-ax.set_xlabel("Transactions performed")
+fig.suptitle("Thoughput")
+ax.set_ylabel("Hz")
+ax.set_xlabel("Total transactions")
 
 ax.plot(df["TxTotal"],df["Hz"])
 ax.set_ylim(bottom=0)
