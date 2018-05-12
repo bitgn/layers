@@ -31,10 +31,10 @@ func benchEventStoreAppends(db fdb.Database) error {
 
 	// split between 10000 aggregates
 
-	aggID := normID(10000, 0, 100000)
+	aggID := r.Intn(100000)
 	aggName := fmt.Sprintf("agg-%d", aggID)
 
-	size := normID(100, 10, 500)
+	size := 200
 
 	data := bytes.Repeat([]byte("Z"), size)
 	pack := []es.Envelope{es.New("test", data)}
