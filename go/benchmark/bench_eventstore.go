@@ -30,8 +30,9 @@ func benchEventStoreAppends(db fdb.Database) error {
 	store := es.NewFdbStore(db, BitgnPrefix)
 
 	// split between 10000 aggregates
-
+	mux.Lock()
 	aggID := r.Intn(100000)
+	mux.Unlock()
 	aggName := fmt.Sprintf("agg-%d", aggID)
 
 	size := 200
