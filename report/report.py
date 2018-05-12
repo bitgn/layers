@@ -4,8 +4,10 @@ import matplotlib.pyplot as plt
 import matplotlib.style as style
 import seaborn as sns
 from matplotlib.colors import ListedColormap
-
+from pathlib import Path
 import argparse
+import json
+
 
 def parse_args():
     parser = argparse.ArgumentParser(description='Generate report')
@@ -13,6 +15,17 @@ def parse_args():
     return parser.parse_args()
 
 args = parse_args()
+
+
+source = Path(args.source)
+
+
+with open(source.with_suffix('.json')) as f:
+    data = json.load(f)
+
+print(data)
+
+
 
 
 

@@ -35,7 +35,7 @@ func stats(ms chan metrics, db fdb.Database) {
 
 	begin := time.Now()
 
-	f := mustOpenJournal(db)
+	f := createJournal(db)
 	defer f.Close()
 	printLine(f, "Seconds", "TxTotal", "TxDelta", "ErrDelta", "Hz", "P50", "P90", "P99", "P999", "100")
 
