@@ -3,43 +3,40 @@ package main
 import (
 	"bytes"
 	"fmt"
-	"math"
-	"sync"
+	"math/rand"
 
-	"github.com/apple/foundationdb/bindings/go/src/fdb"
 	es "github.com/bitgn/layers/go/eventstore"
 )
 
-var (
-	mux sync.Mutex
-)
-
-func normID(deviation, min, max int) int {
-	mux.Lock()
-	f := int(math.Abs(r.NormFloat64())*float64(deviation)) + min
-	mux.Unlock()
-
-	if f > max {
-		f = max
-	}
-	return f
+type EventStoreBench struct {
+	store     es.Store
+	partition int
+	total     int
+	r         *rand.Rand
 }
 
-func benchEventStoreAppends(db fdb.Database) error {
+func NewEventStoreBench(store es.Store, partition, total int) *EventStoreBench {
 
-	store := es.NewFdbStore(db, BitgnPrefix)
+	return &EventStoreBench{
+		store:     store,
+		partition: partition,
+		total:     total,
+		r:         rand.New(rand.NewSource(int64(partition))),
+	}
+}
 
-	// split between 10000 aggregates
-	mux.Lock()
-	aggID := r.Intn(100000)
-	mux.Unlock()
-	aggName := fmt.Sprintf("agg-%d", aggID)
+func (this *EventStoreBench) Run() error {
+	const streamsPerActor = 100
 
 	size := 200
 
+	aggID := r.Intn(streamsPerActor) + this.partition*streamsPerActor
+
+	aggName := fmt.Sprintf("agg-%d", aggID)
+
 	data := bytes.Repeat([]byte("Z"), size)
 	pack := []es.Envelope{es.New("test", data)}
-	err := store.AppendToAggregate(
+	err := this.store.AppendToAggregate(
 		aggName,
 		es.ExpectedVersionAny,
 		pack,

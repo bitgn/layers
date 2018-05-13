@@ -7,6 +7,7 @@ import (
 
 	"github.com/apple/foundationdb/bindings/go/src/fdb"
 	"github.com/apple/foundationdb/bindings/go/src/fdb/tuple"
+	es "github.com/bitgn/layers/go/eventstore"
 )
 
 var (
@@ -36,16 +37,19 @@ func main() {
 		ms := make(chan metrics, 200000)
 
 		for i := 0; i < *actors; i++ {
-			go benchmark(ms, db, benchSimple)
+			b := NewSimpleBench(db, int64(i))
+			go benchmark(ms, b)
 		}
 
 		stats(ms, db)
 	case "es-append":
 
 		ms := make(chan metrics, 200000)
+		store := es.NewFdbStore(db, tuple.Tuple{BitgnPrefix})
 
 		for i := 0; i < *actors; i++ {
-			go benchmark(ms, db, benchEventStoreAppends)
+			b := NewEventStoreBench(store, i, *actors)
+			go benchmark(ms, b)
 		}
 		stats(ms, db)
 	default:
@@ -86,10 +90,10 @@ func clear(db fdb.Database) {
 	}
 }
 
-func benchmark(out chan metrics, db fdb.Database, act action) {
+func benchmark(out chan metrics, b Bench) {
 	for {
 		begin := time.Now()
-		err := act(db)
+		err := b.Run()
 		total := time.Since(begin)
 
 		result := metrics{
@@ -98,4 +102,8 @@ func benchmark(out chan metrics, db fdb.Database, act action) {
 		}
 		out <- result
 	}
+}
+
+type Bench interface {
+	Run() error
 }
