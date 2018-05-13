@@ -66,7 +66,7 @@ df = df.drop(df.index[0])
 
 
 
-fig, axs = plt.subplots(2, sharex = True)
+fig, axs = plt.subplots(3, sharex = True)
 ax=axs[0]
 fig.suptitle(experiment)
 fig.subplots_adjust(top=0.85)
@@ -89,7 +89,6 @@ ax=axs[1]
 
 # plt.title(setup)
 ax.set_ylabel("Latency ms")
-ax.set_xlabel("Transactions performed")
 
 percentiles = ["P50", "P90", "P99", "P999"]
 
@@ -108,7 +107,14 @@ for idx, name in enumerate(percentiles):
 
 ax.legend(loc='upper left', ncol=1, fancybox=True,framealpha=0.5, facecolor="white")
 
+ax=axs[2]
 
+ax.plot(df["TxTotal"],df["Partitions"])
+
+ax.set_ylabel("Partitions")
+ax.set_ylim(bottom=0)
+
+ax.set_xlabel("Transactions performed")
 
 fig.savefig("summary.png")
 plt.close(fig)

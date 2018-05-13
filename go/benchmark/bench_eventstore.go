@@ -30,7 +30,7 @@ func (this *EventStoreBench) Run() error {
 
 	size := 200
 
-	aggID := r.Intn(streamsPerActor) + this.partition*streamsPerActor
+	aggID := this.r.Intn(streamsPerActor) + this.partition*streamsPerActor
 
 	aggName := fmt.Sprintf("agg-%d", aggID)
 
