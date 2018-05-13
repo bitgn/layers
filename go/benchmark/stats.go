@@ -48,14 +48,7 @@ func stats(ms chan metrics, db fdb.Database) {
 	defer f.Close()
 	printLine(f, "Seconds", "TxTotal", "TxDelta", "ErrDelta", "Hz", "P50", "P90", "P99", "P999", "P100", "Partitions", "KVTotal", "Disk", "Move", "Conflicted", "State")
 
-	fmt.Println("     Sec      Hz      Total     Err   P90 ms   P99 ms   MAX ms   Part   KV MiB  Disk MiB   Move  Conflict State")
-
-	boot, err := getStats(db)
-	if err != nil {
-		log.Fatalln("Failed to get fdb state", err)
-	}
-
-	conflictedCounter := boot.Cluster.Workload.Transactions.Conflicted.Counter
+	fmt.Println("     Sec      Hz      Total     Err   P90 ms   P99 ms   MAX ms   Part   KV MiB  Disk MiB   Move  Confl  State")
 
 	var (
 		txTotal, txDelta   int64
@@ -72,7 +65,8 @@ func stats(ms chan metrics, db fdb.Database) {
 
 			st, err := getStats(db)
 
-			var kvTotal, partitions, diskTotal, inFlight, conflictDelta int
+			var kvTotal, partitions, diskTotal, inFlight int
+			var conflictedHz int
 			//var moving int
 			var state string
 			if err == nil {
@@ -82,9 +76,7 @@ func stats(ms chan metrics, db fdb.Database) {
 				state = stateToString(st.Cluster.Data.State.Name)
 				inFlight = st.Cluster.Data.MovingData.InFlightBytes / 1024 / 1024
 
-				c := st.Cluster.Workload.Transactions.Conflicted.Counter
-				conflictDelta, conflictedCounter = c-conflictedCounter, c
-
+				conflictedHz = int(st.Cluster.Workload.Transactions.Conflicted.Hz)
 			} else {
 				log.Println(err)
 			}
@@ -98,7 +90,7 @@ func stats(ms chan metrics, db fdb.Database) {
 				kvTotal,
 				diskTotal,
 				inFlight,
-				conflictDelta,
+				conflictedHz,
 				state,
 			)
 			printLine(f, secTotal,
@@ -113,7 +105,7 @@ func stats(ms chan metrics, db fdb.Database) {
 				kvTotal,
 				diskTotal,
 				inFlight,
-				conflictDelta,
+				conflictedHz,
 				state,
 			)
 			// TODO: gather cluster size
