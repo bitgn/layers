@@ -90,17 +90,28 @@ func clear(db fdb.Database) {
 	}
 }
 
-func benchmark(out chan metrics, b Bench) {
-	for {
-		begin := time.Now()
-		err := b.Run()
-		total := time.Since(begin)
+var (
+	throughput = flag.Int("hz", 1, "Througput to generate requests at")
+)
 
-		result := metrics{
-			error:       err != nil,
-			nanoseconds: total.Nanoseconds(),
-		}
-		out <- result
+func benchmark(out chan metrics, b Bench) {
+
+	period := time.Second / time.Duration(*throughput)
+
+	for range time.Tick(period) {
+
+		begin := time.Now()
+		go func() {
+			err := b.Run()
+			total := time.Since(begin)
+
+			result := metrics{
+				error:       err != nil,
+				nanoseconds: total.Nanoseconds(),
+			}
+			out <- result
+		}()
+
 	}
 }
 

@@ -17,11 +17,13 @@ type EventStoreBench struct {
 
 func NewEventStoreBench(store es.Store, partition, total int) *EventStoreBench {
 
+	seed := rand.Int63()
+
 	return &EventStoreBench{
 		store:     store,
 		partition: partition,
 		total:     total,
-		r:         rand.New(rand.NewSource(int64(partition))),
+		r:         rand.New(rand.NewSource(seed)),
 	}
 }
 
