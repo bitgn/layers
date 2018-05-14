@@ -3,6 +3,7 @@ package main
 import (
 	"bufio"
 	"encoding/json"
+	"flag"
 	"fmt"
 	"io/ioutil"
 	"log"
@@ -41,6 +42,10 @@ func loadClusterInfo(name string) (map[string]string, error) {
 	return m, nil
 }
 
+var (
+	journal = flag.String("journal", "", "Journal file name")
+)
+
 func createJournal(db fdb.Database) *os.File {
 
 	// experiment journal is a folder that contains following information
@@ -51,7 +56,10 @@ func createJournal(db fdb.Database) *os.File {
 
 	t := time.Now().UTC()
 
-	folder := t.Format("bench-2006-01-02-15-04-05")
+	folder := *journal
+	if len(folder) == 0 {
+		folder = t.Format("bench-2006-01-02-15-04-05")
+	}
 
 	fmt.Println("Using folder", folder)
 
