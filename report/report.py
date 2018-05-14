@@ -47,11 +47,6 @@ event size: 200b, writes: 100%, streams: uniform [0..100000]""".format(meta_coun
 
 tsv_file = folder.joinpath(meta["main_tsv"])
 
-
-
-
-
-
 sns.set_style('darkgrid', {'legend.frameon':True})
 
 #style.use('fivethirtyeight')
@@ -74,7 +69,7 @@ title = ax.set_title(setup)
 ax.set_ylabel("Transactions per sec")
 #ax.set_xlabel("Total transactions")
 
-ax.plot(df["TxTotal"],df["Hz"])
+ax.plot(df["Seconds"],df["Hz"])
 ax.set_ylim(bottom=0)
 # fig.savefig("throughput.png")
 #plt.close(fig)
@@ -102,15 +97,48 @@ for idx, name in enumerate(percentiles):
     line = df[name]
     alpha = 1.0 ;
     label = 'Percentile {0}'.format(name)
-    ax.fill_between(df['TxTotal'], prev, line, alpha=alpha, color=cmap(idx), label=label, interpolate=True)
+    ax.fill_between(df['Seconds'], prev, line, alpha=alpha, color=cmap(idx), label=label, interpolate=True)
     prev = line
 
 ax.legend(loc='upper left', ncol=1, fancybox=True,framealpha=0.5, facecolor="white")
 
 
-ax.set_xlabel("Transactions performed")
+ax.set_xlabel("Seconds")
 
 fig.savefig("summary.png")
 plt.close(fig)
 
 print("Saved summary.png")
+
+
+
+fig, axs = plt.subplots(2, sharex = True)
+ax=axs[0]
+
+ax.plot(df["Seconds"],df["Move"])
+ax.set_ylim(bottom=0)
+
+
+ax=axs[1]
+
+ax.plot(df["Seconds"],df["KVTotal"])
+ax.plot(df["Seconds"],df["Disk"])
+ax.set_ylim(bottom=0)
+
+fig.savefig("data.png")
+plt.close(fig)
+
+print("Saved data.png")
+
+
+fig, axs = plt.subplots(2, sharex = True)
+ax=axs[0]
+
+ax.plot(df["Seconds"],df["Conflicted"])
+ax.set_ylim(bottom=0)
+
+
+fig.savefig("tx.png")
+plt.close(fig)
+
+print("Saved tx.png")
