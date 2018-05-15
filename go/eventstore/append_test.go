@@ -20,6 +20,7 @@ func TestGivenEmptyStore(t *testing.T) {
 
 func (s *given_empty_store) SetupTest() {
 	fdb.MustAPIVersion(510)
+
 	db := fdb.MustOpenDefault()
 	s.store = NewFdbStore(db, "es")
 }
@@ -57,7 +58,9 @@ func (s *given_empty_store) Test_when_we_append_one_record() {
 }
 
 func aggregateEquals(a *assert.Assertions, exp, act []AggregateEvent) {
-	a.Equal(len(exp), len(act))
+	if !a.Equal(len(exp), len(act)) {
+		return
+	}
 
 	for i, e := range exp {
 		a.Equal(e.Contract, act[i].Contract)
@@ -67,11 +70,13 @@ func aggregateEquals(a *assert.Assertions, exp, act []AggregateEvent) {
 }
 
 func globalEquals(a *assert.Assertions, exp, act []GlobalRecord) {
-	a.Equal(len(exp), len(act))
+	if a.Equal(len(exp), len(act), "global records") {
 
-	for i, e := range exp {
-		a.Equal(e.Contract, act[i].Contract)
-		a.Equal(e.Data, act[i].Data)
+		for i, e := range exp {
+
+			a.Equal(e.Contract, act[i].Contract)
+			a.Equal(e.Data, act[i].Data)
+		}
 	}
 }
 

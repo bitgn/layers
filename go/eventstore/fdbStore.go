@@ -6,8 +6,12 @@ import (
 	"github.com/apple/foundationdb/bindings/go/src/fdb"
 	"github.com/apple/foundationdb/bindings/go/src/fdb/subspace"
 	"github.com/apple/foundationdb/bindings/go/src/fdb/tuple"
+	"github.com/bitgn/layers/go/compat"
 )
 
+// fdbStore maintains two subspaces:
+// Global / [versionstamp] / contract / <- vs pointer
+// Aggregate / id / version / contract /
 type fdbStore struct {
 	space         subspace.Subspace
 	db            fdb.Database
@@ -60,12 +64,13 @@ func (es *fdbStore) Append(records []Envelope) (err error) {
 
 	_, err = es.db.Transact(func(tr fdb.Transaction) (interface{}, error) {
 
-		for _, evt := range records {
-
-			uuid := NewSequentialUUID()
+		for i, evt := range records {
 
 			contract, data := evt.Payload()
-			tr.Set(globalSpace.Sub(uuid, contract, "", 0), data)
+			template := globalSpace.Sub(compat.VersionStampTemplate, contract)
+			key := compat.InjectVersionStamp(template, uint(i))
+
+			tr.SetVersionstampedValue(key, data)
 		}
 
 		return nil, nil
@@ -113,10 +118,12 @@ func (es *fdbStore) AppendToAggregate(aggregId string, expectedVersion int, reco
 		for i, evt := range records {
 			aggregIndex := nextAggregIndex + i
 
-			uuid := NewSequentialUUID()
-
 			contract, data := evt.Payload()
-			tr.Set(globalSpace.Sub(uuid, contract), data)
+
+			template := globalSpace.Sub(compat.VersionStampTemplate, contract)
+			key := compat.InjectVersionStamp(template, uint(i))
+
+			tr.SetVersionstampedKey(key, data)
 			tr.Set(aggregSpace.Sub(aggregIndex, contract), data)
 		}
 
@@ -156,7 +163,7 @@ func (es *fdbStore) ReadAll(last []byte, limit int) *GlobalSlice {
 
 	for i, kv := range kvs {
 
-		if t, err := globalSpace.Unpack(kv.Key); err != nil {
+		if t, err := compat.UnpackSubspace(globalSpace, kv.Key); err != nil {
 			panic("Failed to unpack key")
 		} else {
 			result[i].Contract = t[1].(string)
