@@ -1,32 +1,39 @@
 package events
 
 import (
+	"testing"
+
 	"github.com/apple/foundationdb/bindings/go/src/fdb"
-	. "gopkg.in/check.v1"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/suite"
 )
 
 // declare our unit test suite
-type given_empty_event_store struct {
+type given_empty_store struct {
 	store Store
+	suite.Suite
 }
 
-func (s *given_empty_event_store) SetUpTest(c *C) {
-	fdb.MustAPIVersion(200)
+func TestGivenEmptyStore(t *testing.T) {
+	suite.Run(t, new(given_empty_store))
+}
+
+func (s *given_empty_store) SetupTest() {
+	fdb.MustAPIVersion(510)
 	db := fdb.MustOpenDefault()
 	s.store = NewFdbStore(db, "es")
 }
-func (s *given_empty_event_store) TearDownTest(c *C) {
+func (s *given_empty_store) TearDownTest() {
 	s.store.Clear()
 }
 
-// add it to gocheck
-var _ = Suite(&given_empty_event_store{})
-
-func (s *given_empty_event_store) Test_when_we_append_one_record(c *C) {
+func (s *given_empty_store) Test_when_we_append_one_record() {
 	// when
 	evt := []Envelope{New("Test", []byte("Hi"))}
 	err := s.store.AppendToAggregate("test1", ExpectedVersionAny, evt)
-	c.Assert(err, IsNil)
+
+	a := assert.New(s.T())
+	a.NoError(err)
 
 	recs := s.store.ReadAll(nil, 0).Items
 	expectedGlobal := []GlobalRecord{
@@ -35,7 +42,8 @@ func (s *given_empty_event_store) Test_when_we_append_one_record(c *C) {
 			Data:     []byte("Hi"),
 		},
 	}
-	c.Check(recs, DeepEquals, expectedGlobal) // global stream should have this record
+
+	globalEquals(a, expectedGlobal, recs)
 
 	expectedAggregate := []AggregateEvent{
 		AggregateEvent{
@@ -45,14 +53,35 @@ func (s *given_empty_event_store) Test_when_we_append_one_record(c *C) {
 		},
 	}
 
-	c.Check(s.store.ReadAllFromAggregate("test1"), DeepEquals, expectedAggregate)
+	aggregateEquals(a, expectedAggregate, s.store.ReadAllFromAggregate("test1"))
 }
 
-func (s *given_empty_event_store) Test_when_we_append_two_records_at_once(c *C) {
+func aggregateEquals(a *assert.Assertions, exp, act []AggregateEvent) {
+	a.Equal(len(exp), len(act))
+
+	for i, e := range exp {
+		a.Equal(e.Contract, act[i].Contract)
+		a.Equal(e.Data, act[i].Data)
+		a.Equal(e.Index, act[i].Index)
+	}
+}
+
+func globalEquals(a *assert.Assertions, exp, act []GlobalRecord) {
+	a.Equal(len(exp), len(act))
+
+	for i, e := range exp {
+		a.Equal(e.Contract, act[i].Contract)
+		a.Equal(e.Data, act[i].Data)
+	}
+}
+
+func (s *given_empty_store) Test_when_we_append_two_records_at_once() {
 	r1 := New("Test", []byte("One"))
 	r2 := New("Test", []byte("Two"))
 	err := s.store.AppendToAggregate("test1", ExpectedVersionAny, []Envelope{r1, r2})
-	c.Assert(err, IsNil)
+
+	a := assert.New(s.T())
+	a.NoError(err)
 
 	recs := s.store.ReadAll(nil, 0).Items
 	expectedGlobal := []GlobalRecord{
@@ -65,7 +94,8 @@ func (s *given_empty_event_store) Test_when_we_append_two_records_at_once(c *C) 
 			Data:     []byte("Two"),
 		},
 	}
-	c.Check(recs, DeepEquals, expectedGlobal)
+
+	globalEquals(a, expectedGlobal, recs)
 
 	expectedAggregate := []AggregateEvent{
 		AggregateEvent{
@@ -80,36 +110,49 @@ func (s *given_empty_event_store) Test_when_we_append_two_records_at_once(c *C) 
 		},
 	}
 
-	c.Check(s.store.ReadAllFromAggregate("test1"), DeepEquals, expectedAggregate)
+	aggregateEquals(a, expectedAggregate, s.store.ReadAllFromAggregate("test1"))
 }
 
-func (s *given_empty_event_store) Test_when_we_append_expecting_some_version(c *C) {
+func (s *given_empty_store) Test_when_we_append_expecting_some_version() {
 
 	evt := New("Test", []byte("Hi"))
 	err := s.store.AppendToAggregate("test1", 1, []Envelope{evt})
 
-	c.Assert(err, DeepEquals, &ErrConcurrencyViolation{
+	expect := &ErrConcurrencyViolation{
 		AggregateId:     "test1",
 		ExpectedVersion: 1,
 		ActualVersion:   -1,
-	})
+	}
+
+	assert.Equal(s.T(), expect, err)
+
 }
 
-func (s *given_empty_event_store) Test_when_we_append_expecting_0_version(c *C) {
+func (s *given_empty_store) Test_when_we_append_expecting_0_version() {
 	evt := New("Test", []byte("Hi"))
 	err := s.store.AppendToAggregate("test1", 0, []Envelope{evt})
 
-	c.Assert(err, DeepEquals, &ErrConcurrencyViolation{
+	expect := &ErrConcurrencyViolation{
 		AggregateId:     "test1",
 		ExpectedVersion: 0,
 		ActualVersion:   -1,
-	})
+	}
+
+	assert.Equal(s.T(), expect, err)
 }
 
-func (s *given_empty_event_store) Test_when_we_append_expecting_no_aggregate(c *C) {
+func (s *given_empty_store) Test_when_we_append_expecting_no_aggregate() {
 	evt := New("Test", []byte("Hi"))
 
 	err := s.store.AppendToAggregate("test1", ExpectedVersionNone, []Envelope{evt})
 
-	c.Assert(err, IsNil)
+	assert.NoError(s.T(), err)
+}
+
+func (s *given_empty_store) Test_when_we_read_records_from_start() {
+	slice := s.store.ReadAll(nil, 10)
+
+	a := assert.New(s.T())
+	a.Equal(len(slice.Items), 0)
+	a.Nil(slice.Last)
 }

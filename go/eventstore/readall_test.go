@@ -1,17 +1,28 @@
 package events
 
 import (
+	"testing"
+
 	"github.com/apple/foundationdb/bindings/go/src/fdb"
-	. "gopkg.in/check.v1"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/suite"
 )
 
 // declare our unit test suite
-type given_event_store_with_2_records struct {
+
+// In order for 'go test' to run this suite, we need to create
+// a normal test function and pass our suite to suite.Run
+func TestGivenFilledStore(t *testing.T) {
+	suite.Run(t, new(given_filled_store))
+}
+
+type given_filled_store struct {
+	suite.Suite
 	store Store
 }
 
-func (s *given_event_store_with_2_records) SetUpTest(c *C) {
-	fdb.MustAPIVersion(200)
+func (s *given_filled_store) SetupTest() {
+	fdb.MustAPIVersion(510)
 	db := fdb.MustOpenDefault()
 	s.store = NewFdbStore(db, "es")
 
@@ -19,32 +30,25 @@ func (s *given_event_store_with_2_records) SetUpTest(c *C) {
 	r2 := New("Test", []byte("Two"))
 	s.store.AppendToAggregate("test", ExpectedVersionAny, []Envelope{r1, r2})
 }
-func (s *given_event_store_with_2_records) TearDownTest(c *C) {
+func (s *given_filled_store) TearDownTest() {
 	s.store.Clear()
 }
 
-func (s *given_event_store_with_2_records) Test_when_we_read_records_by_one(c *C) {
+func (s *given_filled_store) Test_when_we_read_records_by_one() {
 	slice1 := s.store.ReadAll(nil, 1)
-	c.Check(len(slice1.Items), Equals, 1)
-	c.Check(slice1.Last, NotNil)
+
+	a := assert.New(s.T())
+
+	a.Equal(len(slice1.Items), 1)
+	a.NotNil(slice1.Last)
 
 	slice2 := s.store.ReadAll(slice1.Last, 1)
 
-	c.Check(len(slice2.Items), Equals, 1)
-	c.Check(slice2.Last, NotNil)
+	a.Equal(len(slice2.Items), 1)
+	a.NotNil(slice2.Last)
 
 	slice3 := s.store.ReadAll(slice2.Last, 1)
 
-	c.Check(len(slice3.Items), Equals, 0)
-	c.Check(slice3.Last, DeepEquals, slice2.Last)
+	a.Equal(len(slice3.Items), 0)
+	a.Equal(slice3.Last, slice2.Last)
 }
-
-func (s *given_empty_event_store) Test_when_we_read_records_from_start(c *C) {
-	slice := s.store.ReadAll(nil, 10)
-
-	c.Check(len(slice.Items), Equals, 0)
-	c.Check(slice.Last, IsNil)
-}
-
-// add it to gocheck
-var _ = Suite(&given_event_store_with_2_records{})
