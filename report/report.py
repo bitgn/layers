@@ -40,7 +40,7 @@ meta_count = meta["cluster"]["fdb_count"]
 meta_tester = meta["cluster"]["tester_type"]
 
 experiment = "Event Store layer (go): es-append benchmark"
-setup =  """FoundationDB: {0}x {1}, {2} {3}; tester: 1x {4} - 1000 actors.
+setup =  """FoundationDB: {0}x {1}, {2} {3}; tester: 1x {4} - 1000 actors at 20 kHz
 event size: 200b, writes: 100%, streams: uniform [0..100000]""".format(meta_count, meta_vm, status_engine, status_redundancy, meta_tester)
 
 
@@ -85,7 +85,7 @@ ax=axs[1]
 # plt.title(setup)
 ax.set_ylabel("Latency ms")
 
-percentiles = ["P50", "P90", "P99", "P999"]
+percentiles = ["P50", "P90", "P99", "P999", "P100"]
 
 p_count = len(percentiles)
 cmap = ListedColormap(sns.color_palette("YlGnBu_r", len(percentiles)))
@@ -134,8 +134,18 @@ print("Saved data.png")
 fig, axs = plt.subplots(2, sharex = True)
 ax=axs[0]
 
+fig.suptitle(experiment)
+fig.subplots_adjust(top=0.85)
+title = ax.set_title(setup)
+
 ax.plot(df["Seconds"],df["Conflicted"])
 ax.set_ylim(bottom=0)
+
+ax.set_ylabel("Conflicted Tx Hz")
+
+
+ax = axs[1]
+ax.set_xlabel("Seconds")
 
 
 fig.savefig("tx.png")

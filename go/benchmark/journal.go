@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"github.com/apple/foundationdb/bindings/go/src/fdb"
+	"github.com/bitgn/layers/go/benchmark/bench"
 )
 
 var (
@@ -46,7 +47,7 @@ var (
 	journal = flag.String("journal", "", "Journal file name")
 )
 
-func createJournal(db fdb.Database) *os.File {
+func createJournal(db fdb.Database, hz int, d *bench.Description) *os.File {
 
 	// experiment journal is a folder that contains following information
 	// metadata json
@@ -81,6 +82,9 @@ func createJournal(db fdb.Database) *os.File {
 	meta["args"] = os.Args[1:]
 	meta["main_tsv"] = "main.tsv"
 	meta["time"] = t.Format(time.RFC3339)
+	meta["bench-hz"] = hz
+	meta["bench-name"] = d.Name
+	meta["bench-setup"] = d.Setup
 
 	var (
 		info map[string]string

@@ -3,17 +3,18 @@ package main
 import (
 	"flag"
 	"fmt"
-	"time"
 
 	"github.com/apple/foundationdb/bindings/go/src/fdb"
 	"github.com/apple/foundationdb/bindings/go/src/fdb/tuple"
-	es "github.com/bitgn/layers/go/eventstore"
+	esbench "github.com/bitgn/layers/go/eventstore/benchmark"
 )
 
 var (
-	actors = flag.Int("actors", 1000, "number of actors to run")
-	writes = flag.Int("writes", 20, "percent of writes")
+	writes = flag.Uint("writes", 20, "percent of writes")
+	hz     = flag.Int("hz", 1, "Througput to generate requests at")
 )
+
+var ()
 
 func main() {
 
@@ -33,30 +34,23 @@ func main() {
 		clear(db)
 
 	case "simple":
-
 		ms := make(chan metrics, 200000)
-
-		for i := 0; i < *actors; i++ {
-			b := NewSimpleBench(db, int64(i))
-			go benchmark(ms, b)
-		}
-
-		stats(ms, db)
+		b := NewSimpleBench(db, *writes, tuple.Tuple{BitgnPrefix})
+		go runBenchmark(ms, *hz, b)
+		stats(ms, db, *hz, b.Describe())
 	case "es-append":
 
 		ms := make(chan metrics, 200000)
-		store := es.NewFdbStore(db, tuple.Tuple{BitgnPrefix})
-
-		for i := 0; i < *actors; i++ {
-			b := NewEventStoreBench(store, i, *actors)
-			go benchmark(ms, b)
-		}
-		stats(ms, db)
+		b := esbench.NewAppendBench(db, tuple.Tuple{BitgnPrefix})
+		go runBenchmark(ms, *hz, b)
+		stats(ms, db, *hz, b.Describe())
 	default:
 		help()
 		return
 	}
 }
+
+var BitgnPrefix = "bgn"
 
 func help() {
 	fmt.Println("FoundationDB benchmark tool")
@@ -64,15 +58,6 @@ func help() {
 	fmt.Println("Flags:")
 	flag.PrintDefaults()
 }
-
-type metrics struct {
-	nanoseconds int64
-	error       bool
-}
-
-type action func(db fdb.Database) error
-
-var BitgnPrefix = "bgn"
 
 func clear(db fdb.Database) {
 
@@ -88,33 +73,4 @@ func clear(db fdb.Database) {
 	if err != nil {
 		panic(err)
 	}
-}
-
-var (
-	throughput = flag.Int("hz", 1, "Througput to generate requests at")
-)
-
-func benchmark(out chan metrics, b Bench) {
-
-	period := time.Second / time.Duration(*throughput)
-
-	for range time.Tick(period) {
-
-		begin := time.Now()
-		go func() {
-			err := b.Run()
-			total := time.Since(begin)
-
-			result := metrics{
-				error:       err != nil,
-				nanoseconds: total.Nanoseconds(),
-			}
-			out <- result
-		}()
-
-	}
-}
-
-type Bench interface {
-	Run() error
 }

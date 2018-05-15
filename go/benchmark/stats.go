@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/apple/foundationdb/bindings/go/src/fdb"
+	"github.com/bitgn/layers/go/benchmark/bench"
 	"github.com/codahale/hdrhistogram"
 )
 
@@ -37,7 +38,7 @@ func stateToString(name string) string {
 	}
 }
 
-func stats(ms chan metrics, db fdb.Database) {
+func stats(ms chan metrics, db fdb.Database, hz int, d *bench.Description) {
 	freq := time.Duration(*frequencySec) * time.Second
 	timer := time.NewTicker(freq).C
 	latencyMs := hdrhistogram.New(0, 1000000, 4)
@@ -45,11 +46,11 @@ func stats(ms chan metrics, db fdb.Database) {
 
 	begin := time.Now()
 
-	f := createJournal(db)
+	f := createJournal(db, hz, d)
 	defer f.Close()
 	printLine(f, "Seconds", "TxTotal", "TxDelta", "ErrDelta", "Hz", "P50", "P90", "P99", "P999", "P100", "Partitions", "KVTotal", "Disk", "Move", "Conflicted", "State", "G999", "GMAX")
 
-	fmt.Println("     Sec      Hz      Total     Err   P90 ms   P99 ms   MAX ms   Part   KV MiB  Disk MiB   Move  Confl  State")
+	fmt.Println("  Sec     Hz      Total     Err   P90 ms   P99 ms   MAX ms   Part   KV MiB  Disk MiB   Move  Confl  State  Queue")
 
 	started := begin
 	var (
@@ -93,7 +94,7 @@ func stats(ms chan metrics, db fdb.Database) {
 				log.Println(err)
 			}
 
-			fmt.Printf("%8d %7d %10d %7d %8d %8d %8d %6d %8d %9d %6d %6d %6s\n",
+			fmt.Printf("%5d %6d %10d %7d %8d %8d %8d %6d %8d %9d %6d %6d %6s %6d\n",
 				secTotal, hz, txTotal, errTotal,
 				latencyMs.ValueAtQuantile(90),
 				latencyMs.ValueAtQuantile(99),
@@ -104,6 +105,7 @@ func stats(ms chan metrics, db fdb.Database) {
 				inFlight,
 				conflictedHz,
 				state,
+				pendingRequests,
 			)
 			printLine(f, secTotal,
 				txTotal, txDelta,
