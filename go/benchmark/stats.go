@@ -40,16 +40,18 @@ func stateToString(name string) string {
 func stats(ms chan metrics, db fdb.Database) {
 	freq := time.Duration(*frequencySec) * time.Second
 	timer := time.NewTicker(freq).C
-	latencyMs := hdrhistogram.New(0, 50000, 3)
+	latencyMs := hdrhistogram.New(0, 1000000, 4)
+	latencyTotal := hdrhistogram.New(0, 1000000, 4)
 
 	begin := time.Now()
 
 	f := createJournal(db)
 	defer f.Close()
-	printLine(f, "Seconds", "TxTotal", "TxDelta", "ErrDelta", "Hz", "P50", "P90", "P99", "P999", "P100", "Partitions", "KVTotal", "Disk", "Move", "Conflicted", "State")
+	printLine(f, "Seconds", "TxTotal", "TxDelta", "ErrDelta", "Hz", "P50", "P90", "P99", "P999", "P100", "Partitions", "KVTotal", "Disk", "Move", "Conflicted", "State", "G999", "GMAX")
 
 	fmt.Println("     Sec      Hz      Total     Err   P90 ms   P99 ms   MAX ms   Part   KV MiB  Disk MiB   Move  Confl  State")
 
+	started := begin
 	var (
 		txTotal, txDelta   int64
 		errTotal, errDelta int64
@@ -59,9 +61,19 @@ func stats(ms chan metrics, db fdb.Database) {
 		select {
 		case <-timer:
 
-			secTotal := int64(time.Since(begin).Seconds())
+			t := time.Now()
+
+			secTotal := int64(t.Sub(begin).Seconds())
+			secDelta := float64(t.Sub(started).Seconds())
+
+			if secDelta < 1 {
+				continue
+			}
+
+			started = t
+
 			// TODO: account for the delay
-			hz := int(txDelta / *frequencySec)
+			hz := int(float64(txDelta) / secDelta)
 
 			st, err := getStats(db)
 
@@ -107,6 +119,8 @@ func stats(ms chan metrics, db fdb.Database) {
 				inFlight,
 				conflictedHz,
 				state,
+				latencyTotal.ValueAtQuantile(99.9),
+				latencyTotal.ValueAtQuantile(100),
 			)
 			// TODO: gather cluster size
 
@@ -116,6 +130,7 @@ func stats(ms chan metrics, db fdb.Database) {
 		case m := <-ms:
 			ms := m.nanoseconds / int64(time.Millisecond)
 			latencyMs.RecordValue(ms)
+			latencyTotal.RecordValue(ms)
 			if m.error {
 				errDelta++
 				errTotal++

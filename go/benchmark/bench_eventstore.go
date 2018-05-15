@@ -17,7 +17,7 @@ type EventStoreBench struct {
 
 func NewEventStoreBench(store es.Store, partition, total int) *EventStoreBench {
 
-	seed := rand.Int63()
+	seed := rand.Int63() + int64(partition)
 
 	return &EventStoreBench{
 		store:     store,
