@@ -42,14 +42,16 @@ func stats(ms chan metrics, db fdb.Database, hz int, d *bench.Description) {
 	freq := time.Duration(*frequencySec) * time.Second
 	timer := time.NewTicker(freq).C
 	latencyMs := hdrhistogram.New(0, 1000000, 4)
-	latencyTotal := hdrhistogram.New(0, 1000000, 4)
+	// TODO: keep global latency HDR
+	//latencyTotal := hdrhistogram.New(0, 1000000, 4)
 
 	begin := time.Now()
 
 	f := createJournal(db, hz, d)
 	defer f.Close()
-	printLine(f, "Seconds", "TxTotal", "TxDelta", "ErrDelta", "Hz", "P50", "P90", "P99", "P999", "P100", "Partitions", "KVTotal", "Disk", "Move", "Conflicted", "State", "G999", "GMAX")
+	printLine(f, "Seconds", "TxTotal", "TxDelta", "ErrDelta", "Hz", "P50", "P90", "P99", "P999", "P100", "Partitions", "KVTotal", "Disk", "Move", "Conflicted", "State", "Queue")
 
+	fmt.Printf("Running %s at %d Hz: %s\n", d.Name, hz, d.Setup)
 	fmt.Println("  Sec     Hz      Total     Err   P90 ms   P99 ms   MAX ms   Part   KV MiB  Disk MiB   Move  Confl  State  Queue")
 
 	started := begin
@@ -121,8 +123,9 @@ func stats(ms chan metrics, db fdb.Database, hz int, d *bench.Description) {
 				inFlight,
 				conflictedHz,
 				state,
-				latencyTotal.ValueAtQuantile(99.9),
-				latencyTotal.ValueAtQuantile(100),
+				//latencyTotal.ValueAtQuantile(99.9),
+				//latencyTotal.ValueAtQuantile(100),
+				pendingRequests,
 			)
 			// TODO: gather cluster size
 
@@ -132,7 +135,7 @@ func stats(ms chan metrics, db fdb.Database, hz int, d *bench.Description) {
 		case m := <-ms:
 			ms := m.nanoseconds / int64(time.Millisecond)
 			latencyMs.RecordValue(ms)
-			latencyTotal.RecordValue(ms)
+			// latencyTotal.RecordValue(ms)
 			if m.error {
 				errDelta++
 				errTotal++
