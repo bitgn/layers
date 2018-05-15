@@ -116,7 +116,7 @@ func (es *fdbStore) AppendToAggregate(aggregId string, expectedVersion int, reco
 			uuid := NewSequentialUUID()
 
 			contract, data := evt.Payload()
-			tr.Set(globalSpace.Sub(uuid, contract, aggregId, aggregIndex), data)
+			tr.Set(globalSpace.Sub(uuid, contract), data)
 			tr.Set(aggregSpace.Sub(aggregIndex, contract), data)
 		}
 
