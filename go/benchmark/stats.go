@@ -38,7 +38,7 @@ func stateToString(name string) string {
 	}
 }
 
-func stats(ms chan metrics, db fdb.Database, hz int, d *bench.Description) {
+func stats(ms chan metrics, db fdb.Database, hz int, d *bench.Description, command string) {
 	freq := time.Duration(*frequencySec) * time.Second
 	timer := time.NewTicker(freq).C
 	latencyMs := hdrhistogram.New(0, 1000000, 4)
@@ -47,7 +47,7 @@ func stats(ms chan metrics, db fdb.Database, hz int, d *bench.Description) {
 
 	begin := time.Now()
 
-	f := createJournal(db, hz, d)
+	f := createJournal(db, hz, d, command)
 	defer f.Close()
 	printLine(f, "Seconds", "TxTotal", "TxDelta", "ErrDelta", "Hz", "P50", "P90", "P99", "P999", "P100", "Partitions", "KVTotal", "Disk", "Move", "Conflicted", "State", "Queue1", "Queue2")
 

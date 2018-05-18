@@ -28,7 +28,8 @@ func (b *Custom1Bench) Describe() *bench.Description {
 }
 
 func (b *Custom1Bench) randomID(table int) []byte {
-	array := [16]byte(uuid.New())
+	u, _ := uuid.NewUUID()
+	array := [16]byte(u)
 	return b.space.Sub(table, array[:]).Bytes()
 }
 

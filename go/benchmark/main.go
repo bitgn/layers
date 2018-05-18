@@ -6,8 +6,6 @@ import (
 
 	"github.com/apple/foundationdb/bindings/go/src/fdb"
 	"github.com/apple/foundationdb/bindings/go/src/fdb/tuple"
-	"github.com/bitgn/layers/go/benchmark/experiment"
-	esbench "github.com/bitgn/layers/go/eventstore/benchmark"
 )
 
 var (
@@ -29,41 +27,21 @@ func main() {
 	fdb.MustAPIVersion(510)
 	db := fdb.MustOpenDefault()
 
-	switch command {
-
-	case "clear":
-		clear(db)
-
-	case "simple":
+	b := launch(command, db)
+	if b != nil {
 		ms := make(chan metrics, 200000)
-		b := NewSimpleBench(db, *writes, tuple.Tuple{BitgnPrefix})
 		go runBenchmark(ms, *hz, b)
-		stats(ms, db, *hz, b.Describe())
-	case "es-append":
-
-		ms := make(chan metrics, 200000)
-		b := esbench.NewAppendBench(db, tuple.Tuple{BitgnPrefix})
-		go runBenchmark(ms, *hz, b)
-		stats(ms, db, *hz, b.Describe())
-	case "es-v2-append":
-
-		ms := make(chan metrics, 200000)
-		b := experiment.NewEventStoreBench(db, tuple.Tuple{BitgnPrefix})
-		go runBenchmark(ms, *hz, b)
-		stats(ms, db, *hz, b.Describe())
-	case "custom1":
-
-		ms := make(chan metrics, 200000)
-		b := experiment.NewCustom1Bench(db, tuple.Tuple{BitgnPrefix})
-		go runBenchmark(ms, *hz, b)
-		stats(ms, db, *hz, b.Describe())
-	default:
-		help()
+		stats(ms, db, *hz, b.Describe(), command)
 		return
 	}
-}
 
-var BitgnPrefix = "bgn"
+	switch command {
+	case "clear":
+		clear(db)
+	default:
+		help()
+	}
+}
 
 func help() {
 	fmt.Println("FoundationDB benchmark tool")

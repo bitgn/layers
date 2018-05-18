@@ -47,7 +47,7 @@ var (
 	journal = flag.String("journal", "", "Journal file name")
 )
 
-func createJournal(db fdb.Database, hz int, d *bench.Description) *os.File {
+func createJournal(db fdb.Database, hz int, d *bench.Description, name string) *os.File {
 
 	// experiment journal is a folder that contains following information
 	// metadata json
@@ -58,8 +58,21 @@ func createJournal(db fdb.Database, hz int, d *bench.Description) *os.File {
 	t := time.Now().UTC()
 
 	folder := *journal
+
+	meta := make(map[string]interface{})
+
+	var (
+		info map[string]string
+		data []byte
+	)
+
+	if info, _ = loadClusterInfo("/etc/cluster"); info != nil {
+		meta["cluster"] = info
+	}
+
 	if len(folder) == 0 {
 		folder = t.Format("bench-2006-01-02-15-04-05")
+		folder = fmt.Sprintf("%s-%s-%dhz", folder, name, hz)
 	}
 
 	fmt.Println("Using folder", folder)
@@ -76,8 +89,6 @@ func createJournal(db fdb.Database, hz int, d *bench.Description) *os.File {
 		log.Fatalln("Failed to dump status.json", err)
 	}
 
-	meta := make(map[string]interface{})
-
 	meta["status_file"] = "status.json"
 	meta["args"] = os.Args[1:]
 	meta["main_tsv"] = "main.tsv"
@@ -85,15 +96,6 @@ func createJournal(db fdb.Database, hz int, d *bench.Description) *os.File {
 	meta["bench-hz"] = hz
 	meta["bench-name"] = d.Name
 	meta["bench-setup"] = d.Setup
-
-	var (
-		info map[string]string
-		data []byte
-	)
-
-	if info, err = loadClusterInfo("/etc/cluster"); info != nil {
-		meta["cluster"] = info
-	}
 
 	data, err = json.Marshal(meta)
 	if err != nil {
