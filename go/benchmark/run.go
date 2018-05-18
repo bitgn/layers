@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"sync/atomic"
 	"time"
 
@@ -17,25 +16,25 @@ func runBenchmark(ms chan metrics, hz int, l bench.Launcher) {
 
 	period := time.Duration(float64(time.Second) / float64(hz))
 
-	fmt.Println("Period is", period)
-
 	var sent int
 
 	xor := NewXorShift()
-
 	started := time.Now()
 
 	for range time.Tick(period) {
 		begin := time.Now()
 		x := xor.Next()
 
-		// should have sent by now:
+		// ticker might be slow or lagging,
+		// so we want to track how many requests we should've sent by now
 		elapsed := begin.Sub(started)
 		planned := int(elapsed.Seconds() * float64(hz))
 		missing := planned - sent
 
 		waitingRequests = int64(missing)
 
+		// don't trust the ticker to catch up
+		// just sent all missing requests
 		for i := 0; i < missing; i++ {
 
 			atomic.AddInt64(&pendingRequests, 1)
