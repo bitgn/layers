@@ -9,8 +9,8 @@ import (
 )
 
 var (
-	pendingRequests int32
-	waitingRequests int32
+	pendingRequests int64
+	waitingRequests int64
 )
 
 func runBenchmark(ms chan metrics, hz int, l bench.Launcher) {
@@ -28,14 +28,14 @@ func runBenchmark(ms chan metrics, hz int, l bench.Launcher) {
 	for range time.Tick(period) {
 		begin := time.Now()
 		x := xor.Next()
-		atomic.AddInt32(&pendingRequests, 1)
+		atomic.AddInt64(&pendingRequests, 1)
 
 		// should have sent by now:
 		elapsed := begin.Sub(started)
 		planned := int(elapsed.Seconds() * float64(hz))
 		missing := planned - sent
 
-		waitingRequests = int32(missing)
+		waitingRequests = int64(missing)
 
 		for i := 0; i < missing; i++ {
 
@@ -48,7 +48,7 @@ func runBenchmark(ms chan metrics, hz int, l bench.Launcher) {
 					nanoseconds: total.Nanoseconds(),
 				}
 				ms <- result
-				atomic.AddInt32(&pendingRequests, -1)
+				atomic.AddInt64(&pendingRequests, -1)
 			}()
 			sent++
 		}
