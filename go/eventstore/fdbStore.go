@@ -6,7 +6,6 @@ import (
 	"github.com/apple/foundationdb/bindings/go/src/fdb"
 	"github.com/apple/foundationdb/bindings/go/src/fdb/subspace"
 	"github.com/apple/foundationdb/bindings/go/src/fdb/tuple"
-	"github.com/bitgn/layers/go/compat"
 )
 
 // fdbStore maintains two subspaces:
@@ -62,15 +61,13 @@ func (es *fdbStore) Append(records []Envelope) (err error) {
 
 	globalSpace := es.space.Sub(globalPrefix)
 
+	uuid := NewSequentialUUID()
+
 	_, err = es.db.Transact(func(tr fdb.Transaction) (interface{}, error) {
 
 		for i, evt := range records {
-
 			contract, data := evt.Payload()
-			template := globalSpace.Sub(compat.VersionStampTemplate, contract)
-			key := compat.InjectVersionStamp(template, uint(i))
-
-			tr.SetVersionstampedValue(key, data)
+			tr.Set(globalSpace.Sub(uuid, i, contract), data)
 		}
 
 		return nil, nil
@@ -83,7 +80,7 @@ func (es *fdbStore) AppendToAggregate(aggregId string, expectedVersion int, reco
 
 	globalSpace := es.space.Sub(globalPrefix)
 	aggregSpace := es.space.Sub(aggregPrefix, aggregId)
-
+	uuid := NewSequentialUUID()
 	// TODO add random key to reduce contention
 
 	_, err = es.db.Transact(func(tr fdb.Transaction) (interface{}, error) {
@@ -120,10 +117,7 @@ func (es *fdbStore) AppendToAggregate(aggregId string, expectedVersion int, reco
 
 			contract, data := evt.Payload()
 
-			template := globalSpace.Sub(compat.VersionStampTemplate, contract)
-			key := compat.InjectVersionStamp(template, uint(i))
-
-			tr.SetVersionstampedKey(key, data)
+			tr.Set(globalSpace.Sub(uuid, i, contract), data)
 			tr.Set(aggregSpace.Sub(aggregIndex, contract), data)
 		}
 
@@ -163,10 +157,10 @@ func (es *fdbStore) ReadAll(last []byte, limit int) *GlobalSlice {
 
 	for i, kv := range kvs {
 
-		if t, err := compat.UnpackSubspace(globalSpace, kv.Key); err != nil {
+		if t, err := globalSpace.Unpack(kv.Key); err != nil {
 			panic("Failed to unpack key")
 		} else {
-			result[i].Contract = t[1].(string)
+			result[i].Contract = t[2].(string)
 			result[i].Data = kv.Value
 			last = []byte(kv.Key)
 		}
