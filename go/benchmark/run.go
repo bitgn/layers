@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"sync/atomic"
 	"time"
 
@@ -15,10 +16,11 @@ func runBenchmark(ms chan metrics, hz int, l bench.Launcher) {
 
 	period := time.Duration(float64(time.Second) / float64(hz))
 
+	fmt.Println("Period is", period)
+
 	xor := NewXorShift()
 
 	for range time.Tick(period) {
-
 		begin := time.Now()
 		x := xor.Next()
 		atomic.AddInt32(&pendingRequests, 1)
