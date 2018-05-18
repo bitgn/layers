@@ -10,6 +10,7 @@ import (
 
 var (
 	pendingRequests int32
+	waitingRequests int
 )
 
 func runBenchmark(ms chan metrics, hz int, l bench.Launcher) {
@@ -18,23 +19,37 @@ func runBenchmark(ms chan metrics, hz int, l bench.Launcher) {
 
 	fmt.Println("Period is", period)
 
+	var sent int
+
 	xor := NewXorShift()
+
+	started := time.Now()
 
 	for range time.Tick(period) {
 		begin := time.Now()
 		x := xor.Next()
 		atomic.AddInt32(&pendingRequests, 1)
-		go func() {
-			err := l.Exec(x)
-			total := time.Since(begin)
 
-			result := metrics{
-				error:       err != nil,
-				nanoseconds: total.Nanoseconds(),
-			}
-			ms <- result
-			atomic.AddInt32(&pendingRequests, -1)
-		}()
+		// should have sent by now:
+		elapsed := begin.Sub(started)
+		planned := int(elapsed.Seconds() * float64(hz))
+		waitingRequests = planned - sent
+
+		for i := 0; i < waitingRequests; i++ {
+
+			go func() {
+				err := l.Exec(x)
+				total := time.Since(begin)
+
+				result := metrics{
+					error:       err != nil,
+					nanoseconds: total.Nanoseconds(),
+				}
+				ms <- result
+				atomic.AddInt32(&pendingRequests, -1)
+			}()
+			sent++
+		}
 
 	}
 }

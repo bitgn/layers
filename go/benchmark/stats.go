@@ -107,7 +107,7 @@ func stats(ms chan metrics, db fdb.Database, hz int, d *bench.Description) {
 				inFlight,
 				conflictedHz,
 				state,
-				pendingRequests,
+				pendingRequests+waitingRequests,
 			)
 			printLine(f, secTotal,
 				txTotal, txDelta,
