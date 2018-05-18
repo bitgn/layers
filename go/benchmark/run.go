@@ -10,7 +10,7 @@ import (
 
 var (
 	pendingRequests int32
-	waitingRequests int
+	waitingRequests int32
 )
 
 func runBenchmark(ms chan metrics, hz int, l bench.Launcher) {
@@ -33,9 +33,11 @@ func runBenchmark(ms chan metrics, hz int, l bench.Launcher) {
 		// should have sent by now:
 		elapsed := begin.Sub(started)
 		planned := int(elapsed.Seconds() * float64(hz))
-		waitingRequests = planned - sent
+		missing := planned - sent
 
-		for i := 0; i < waitingRequests; i++ {
+		waitingRequests = int32(missing)
+
+		for i := 0; i < missing; i++ {
 
 			go func() {
 				err := l.Exec(x)
