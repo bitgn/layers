@@ -28,7 +28,6 @@ func runBenchmark(ms chan metrics, hz int, l bench.Launcher) {
 	for range time.Tick(period) {
 		begin := time.Now()
 		x := xor.Next()
-		atomic.AddInt64(&pendingRequests, 1)
 
 		// should have sent by now:
 		elapsed := begin.Sub(started)
@@ -39,6 +38,7 @@ func runBenchmark(ms chan metrics, hz int, l bench.Launcher) {
 
 		for i := 0; i < missing; i++ {
 
+			atomic.AddInt64(&pendingRequests, 1)
 			go func() {
 				err := l.Exec(x)
 				total := time.Since(begin)
