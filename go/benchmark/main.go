@@ -51,6 +51,12 @@ func main() {
 		b := experiment.NewEventStoreBench(db, tuple.Tuple{BitgnPrefix})
 		go runBenchmark(ms, *hz, b)
 		stats(ms, db, *hz, b.Describe())
+	case "custom1":
+
+		ms := make(chan metrics, 200000)
+		b := experiment.NewCustom1Bench(db, tuple.Tuple{BitgnPrefix})
+		go runBenchmark(ms, *hz, b)
+		stats(ms, db, *hz, b.Describe())
 	default:
 		help()
 		return
