@@ -39,9 +39,13 @@ meta_vm = meta["cluster"]["fdb_type"]
 meta_count = meta["cluster"]["fdb_count"]
 meta_tester = meta["cluster"]["tester_type"]
 
-experiment = "Event Store layer (go): es-append benchmark"
-setup =  """FoundationDB: {0}x {1}, {2} {3}; tester: 1x {4} - 1000 actors at 20 kHz
-event size: 200b, writes: 100%, streams: uniform [0..100000]""".format(meta_count, meta_vm, status_engine, status_redundancy, meta_tester)
+experiment = meta["bench-name"]
+bench_setup = meta["bench-setup"]
+bench_hz = meta["bench-hz"]
+setup =  """FoundationDB: {0}x {1}, {2} {3}; tester: 1x {4} - at {5} Hz
+{6}""".format(meta_count, meta_vm, status_engine, status_redundancy, meta_tester,
+           bench_hz,
+           bench_setup)
 
 
 
