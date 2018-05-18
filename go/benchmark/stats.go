@@ -32,7 +32,7 @@ func stateToString(name string) string {
 	case "healthy_repartitioning":
 		return "hr"
 	case "healthy":
-		return "hlth"
+		return "ok"
 	default:
 		return name
 	}
@@ -52,7 +52,7 @@ func stats(ms chan metrics, db fdb.Database, hz int, d *bench.Description) {
 	printLine(f, "Seconds", "TxTotal", "TxDelta", "ErrDelta", "Hz", "P50", "P90", "P99", "P999", "P100", "Partitions", "KVTotal", "Disk", "Move", "Conflicted", "State", "Queue")
 
 	fmt.Printf("Running %s at %d Hz: %s\n", d.Name, hz, d.Setup)
-	fmt.Println("  Sec     Hz      Total     Err   P90 ms   P99 ms   MAX ms   Part   KV MiB  Disk MiB   Move  Confl  State  Queue")
+	fmt.Println("  Sec     Hz      Total  Err   P90 ms   P99 ms   MAX ms   Part   KV MiB  Disk MiB   Move  Confl  St    Q1    Q2")
 
 	started := begin
 	var (
@@ -96,8 +96,8 @@ func stats(ms chan metrics, db fdb.Database, hz int, d *bench.Description) {
 				log.Println(err)
 			}
 
-			fmt.Printf("%5d %6d %10d %7d %8d %8d %8d %6d %8d %9d %6d %6d %6s %6d\n",
-				secTotal, hz, txTotal, errTotal,
+			fmt.Printf("%5d %6d %10d %4d %8d %8d %8d %6d %8d %9d %6d %6d %3s %5d %5d\n",
+				secTotal, hz, txTotal, errDelta,
 				latencyMs.ValueAtQuantile(90),
 				latencyMs.ValueAtQuantile(99),
 				latencyMs.ValueAtQuantile(100),
@@ -107,7 +107,8 @@ func stats(ms chan metrics, db fdb.Database, hz int, d *bench.Description) {
 				inFlight,
 				conflictedHz,
 				state,
-				pendingRequests+waitingRequests,
+				waitingRequests,
+				pendingRequests,
 			)
 			printLine(f, secTotal,
 				txTotal, txDelta,
