@@ -6,6 +6,7 @@ import (
 
 	"github.com/apple/foundationdb/bindings/go/src/fdb"
 	"github.com/apple/foundationdb/bindings/go/src/fdb/tuple"
+	"github.com/bitgn/layers/go/benchmark/experiment"
 	esbench "github.com/bitgn/layers/go/eventstore/benchmark"
 )
 
@@ -42,6 +43,12 @@ func main() {
 
 		ms := make(chan metrics, 200000)
 		b := esbench.NewAppendBench(db, tuple.Tuple{BitgnPrefix})
+		go runBenchmark(ms, *hz, b)
+		stats(ms, db, *hz, b.Describe())
+	case "es-v2-append":
+
+		ms := make(chan metrics, 200000)
+		b := experiment.NewEventStoreBench(db, tuple.Tuple{BitgnPrefix})
 		go runBenchmark(ms, *hz, b)
 		stats(ms, db, *hz, b.Describe())
 	default:
