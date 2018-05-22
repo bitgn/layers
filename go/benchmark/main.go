@@ -5,7 +5,6 @@ import (
 	"fmt"
 
 	"github.com/apple/foundationdb/bindings/go/src/fdb"
-	"github.com/apple/foundationdb/bindings/go/src/fdb/tuple"
 )
 
 var (
@@ -54,9 +53,10 @@ func help() {
 func clear(db fdb.Database) {
 
 	err, _ := db.Transact(func(tr fdb.Transaction) (interface{}, error) {
-
-		t := tuple.Tuple{BitgnPrefix}
-		r, _ := fdb.PrefixRange(t.Pack())
+		r := fdb.KeyRange{
+			Begin: fdb.Key([]byte{0}),
+			End:   fdb.Key([]byte{255}),
+		}
 
 		tr.ClearRange(r)
 		return nil, nil
