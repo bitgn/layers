@@ -8,6 +8,8 @@ from pathlib import Path
 import argparse
 import json
 
+import htmlgen as html
+
 
 def parse_args():
     parser = argparse.ArgumentParser(description='Generate report')
@@ -19,7 +21,10 @@ args = parse_args()
 
 folder = Path(args.source)
 
-meta = folder.joinpath("meta.json")
+def rel(name):
+    return str(folder.joinpath(name))
+
+meta = rel("meta.json")
 
 
 
@@ -57,6 +62,10 @@ sns.set_style('darkgrid', {'legend.frameon':True})
 mpl.rcParams["axes.formatter.useoffset"] = False
 # get rid of scientific notation
 plt.ticklabel_format(style='plain', axis='y')
+
+
+def legend(ax):
+    ax.legend(loc='upper left', ncol=1, fancybox=True,framealpha=0.5, facecolor="white")
 
 
 df = pd.read_table(tsv_file)
@@ -109,50 +118,110 @@ ax.legend(loc='upper left', ncol=1, fancybox=True,framealpha=0.5, facecolor="whi
 
 ax.set_xlabel("Seconds")
 
-fig.savefig("summary.png")
+fig.savefig(rel("summary.png"))
 plt.close(fig)
 
 print("Saved summary.png")
 
 
+### DATA CHART
+fig, axs = plt.subplots(3, sharex = True)
+fig.suptitle("Data")
 
-fig, axs = plt.subplots(2, sharex = True)
 ax=axs[0]
+ax.plot(df["Seconds"],df["KVTotal"], label="Sum of key-value sizes")
+ax.set_ylabel("MB")
 
-ax.plot(df["Seconds"],df["Move"])
+ax.plot(df["Seconds"],df["Disk"], label="Disk space used")
 ax.set_ylim(bottom=0)
-
+legend(ax)
 
 ax=axs[1]
-
-ax.plot(df["Seconds"],df["KVTotal"])
-ax.plot(df["Seconds"],df["Disk"])
+ax.plot(df["Seconds"],df["Move"], label="Moving data")
 ax.set_ylim(bottom=0)
+ax.set_ylabel("MB")
+legend(ax)
 
-fig.savefig("data.png")
+
+ax=axs[2]
+ax.plot(df["Seconds"],df["Partitions"], label="Partitions")
+ax.set_ylim(bottom=0)
+legend(ax)
+
+ax.set_xlabel("Seconds")
+
+fig.savefig(rel("data.png"))
 plt.close(fig)
+
+
 
 print("Saved data.png")
 
 
 fig, axs = plt.subplots(2, sharex = True)
+
+fig.suptitle("Workload")
 ax=axs[0]
-
-fig.suptitle(experiment)
-fig.subplots_adjust(top=0.85)
-title = ax.set_title(setup)
-
-ax.plot(df["Seconds"],df["Conflicted"])
+ax.plot(df["Seconds"],df["Conflicted"], label="Transaction conflicts")
+legend(ax)
 ax.set_ylim(bottom=0)
-
 ax.set_ylabel("Conflicted Tx Hz")
 
 
 ax = axs[1]
+ax.plot(df["Seconds"], df["Queue1"], label="Client: waiting to launch")
+ax.plot(df["Seconds"], df["Queue2"], label="Client: waiting for response")
+legend(ax)
+
 ax.set_xlabel("Seconds")
 
 
-fig.savefig("tx.png")
+fig.savefig(rel("tx.png"))
 plt.close(fig)
 
-print("Saved tx.png")
+
+def html_list(*items):
+    html = "<ul>"
+    for (k, v) in items:
+        html += "<li>{0}: <em>{1}</em></li>".format(k,v)
+    return html + "</ul>"
+
+config_list = html_list(
+    
+    ("<strong>FoundationDB Cluster</strong>", "{0}x <code>{1}</code> nodes ({2} processes total)".format(meta_count, meta_vm, status_processes)),
+    ("<strong>Benchmark</strong>", experiment),
+    ("Benchmark config", bench_setup),
+    ("Arguments", "<code>" + " ".join(meta["args"]) + "</code>"),
+
+    ("Test VMs", "{0}x <code>{1}</code>".format(1, meta_tester)),
+    ("<strong>Storage</strong>", "{0} {1}".format(status_engine, status_redundancy)),
+    ("<strong>Requests per second</strong>", "{0} Hz".format(bench_hz)),
+    ("Time", meta["time"])
+
+)
+        
+
+
+with open(rel("index.html"), "w") as f:
+
+    b = html.simple_sect(
+        "Setup",
+        config_list,
+    )
+
+    b+= html.simple_sect(
+        "Charts",
+        html.img("summary.png"),
+        html.img("tx.png"),
+        html.img("data.png"),
+
+        )
+
+    b+= '<p class="text-right">by <a href="https://abdullin.com">Rinat Abdullin</a></p>'
+
+    
+    index = html.page(html.nav_bar("FoundationDB Benchmark"), b)
+    f.write(index)
+
+
+
