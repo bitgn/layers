@@ -64,22 +64,33 @@ func createJournal(db fdb.Database, hz int, d *bench.Description, name string) *
 	var (
 		info map[string]string
 		data []byte
+		err  error
 	)
 
-	if info, _ = loadClusterInfo("/etc/cluster"); info != nil {
+	if info, err = loadClusterInfo("/etc/cluster"); info != nil {
 		meta["cluster"] = info
+	} else {
+		fmt.Println("Failed to get cluster info: ", err)
 	}
 
 	if len(folder) == 0 {
 		folder = t.Format("bench-2006-01-02-15-04-05")
+
 		folder = fmt.Sprintf("%s-%s-%dhz", folder, name, hz)
+
+		if info != nil {
+			folder = fmt.Sprintf("%s-%s-%s", folder, info["fdb_type"], info["fdb_count"])
+		}
+
 	}
 
 	fmt.Println("Using folder", folder)
 
 	os.MkdirAll(folder, 0755)
 
-	status, err := getStatus(db)
+	var status []byte
+
+	status, err = getStatus(db)
 	if err != nil {
 		log.Fatalln("Failed to get FDB status", err)
 	}
