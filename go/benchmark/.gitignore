@@ -3,3 +3,4 @@
 compile.sh
 benchmark-aws
 benchcli
+bench-*

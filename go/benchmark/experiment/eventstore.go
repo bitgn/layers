@@ -31,8 +31,15 @@ func NewEventStoreBench(db fdb.Database, pfx ...tuple.TupleElement) bench.Launch
 func (e *EventStore) Describe() *bench.Description {
 	return &bench.Description{
 		Name: "EventStore experimental v2 (go) - es-v2-append",
-		Setup: fmt.Sprintf("event size: %d, streams %d",
+		Setup: fmt.Sprintf("event size: %d, streams: %d",
 			e.eventSize, e.streams),
+		Explanation: `
+This benchmark simulates appends in an experimental event store. It writes a copy of event into global event stream and a named event stream. Both entries are versionstamped.
+
+Stream names are in form 'agg-%d', where the number is randomly generated (even distribution). Event size is fixed.
+
+At the end of the transaction we also retrieve current transaction versionstamp (to be used by the application logic).
+`,
 	}
 }
 

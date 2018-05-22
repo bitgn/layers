@@ -47,10 +47,12 @@ meta_tester = meta["cluster"]["tester_type"]
 experiment = meta["bench-name"]
 bench_setup = meta["bench-setup"]
 bench_hz = meta["bench-hz"]
-setup =  """FoundationDB: {0}x {1}, {2} {3}; tester: 1x {4} - at {5} Hz
+setup =  """FDB: {0}x {1}, {2} {3}; tester: 1x {4} ({7} procs) - at {5} Hz
 {6}""".format(meta_count, meta_vm, status_engine, status_redundancy, meta_tester,
-           bench_hz,
-           bench_setup)
+              bench_hz,
+              bench_setup,
+              status_processes
+)
 
 
 
@@ -186,28 +188,43 @@ def html_list(*items):
         html += "<li>{0}: <em>{1}</em></li>".format(k,v)
     return html + "</ul>"
 
-config_list = html_list(
-    
-    ("<strong>FoundationDB Cluster</strong>", "{0}x <code>{1}</code> nodes ({2} processes total)".format(meta_count, meta_vm, status_processes)),
-    ("<strong>Benchmark</strong>", experiment),
-    ("Benchmark config", bench_setup),
-    ("Build", "<code>" + meta["build"] + "</code>"),
-    ("Arguments", "<code>" + " ".join(meta["args"]) + "</code>"),
-    ("Test VMs", "{0}x <code>{1}</code>".format(1, meta_tester)),
-    ("<strong>Storage</strong>", "{0} {1}".format(status_engine, status_redundancy)),
-    ("<strong>Requests per second</strong>", "{0} Hz".format(bench_hz)),
-    ("Time", meta["time"])
+build = meta["build"]
 
+if not build:
+    build = "dev"
+
+config_list = html_list(
+    ("<strong>Benchmark</strong>", experiment),
+    ("<strong>FoundationDB Cluster</strong>", "{0}x <code>{1}</code> nodes ({2} processes total)".format(meta_count, meta_vm, status_processes)),
+    ("<strong>Storage</strong>", "{0} {1}".format(status_engine, status_redundancy)),
+
+    ("<strong>Requests per second</strong>", "{0} Hz".format(bench_hz)),
+    ("Benchmark config", bench_setup),
+    ("Arguments", "<code>" + " ".join(meta["args"]) + "</code>"),
+    ("Build", "<code>" + build + "</code>"),
+    ("Test VMs", "{0}x <code>{1}</code>".format(1, meta_tester)),
+    ("Time", meta["time"])
 )
         
 
 
 with open(rel("index.html"), "w") as f:
 
+
+    
+    text = meta["bench-text"]
+
+    if text:
+        lines = text.split("\n")
+        for l in lines:
+            config_list += "<p>" + l + "</p>"
+    
     b = html.simple_sect(
         "Setup",
         config_list,
     )
+
+        
 
     b+= html.simple_sect(
         "Charts",
@@ -220,7 +237,10 @@ with open(rel("index.html"), "w") as f:
     b+= '<p class="text-right">by <a href="https://abdullin.com">Rinat Abdullin</a></p>'
 
     
-    index = html.page(html.nav_bar("FoundationDB Benchmark"), b)
+    index = html.page(
+        experiment + " | FoundationDB Benchmark",
+        html.nav_bar("FoundationDB Benchmark"),
+        b)
     f.write(index)
 
 

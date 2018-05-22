@@ -107,6 +107,7 @@ func createJournal(db fdb.Database, hz int, d *bench.Description, name string) *
 	meta["bench-hz"] = hz
 	meta["bench-name"] = d.Name
 	meta["bench-setup"] = d.Setup
+	meta["bench-text"] = d.Explanation
 	meta["build"] = buildVersion
 
 	data, err = json.Marshal(meta)

@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/apple/foundationdb/bindings/go/src/fdb"
@@ -47,11 +48,25 @@ func stats(ms chan metrics, db fdb.Database, hz int, d *bench.Description, comma
 
 	begin := time.Now()
 
+	d.Explanation = strings.Trim(d.Explanation, " \r\n")
+
 	f := createJournal(db, hz, d, command)
 	defer f.Close()
 	printLine(f, "Seconds", "TxTotal", "TxDelta", "ErrDelta", "Hz", "P50", "P90", "P99", "P999", "P100", "Partitions", "KVTotal", "Disk", "Move", "Conflicted", "State", "Queue1", "Queue2")
 
 	fmt.Printf("Running %s at %d Hz: %s\n", d.Name, hz, d.Setup)
+
+	const (
+		RESET = "\x1b[0m"
+		GREEN = "\x1b[32;1m"
+	)
+
+	if len(d.Explanation) > 0 {
+		fmt.Println(GREEN)
+		fmt.Println(d.Explanation)
+		fmt.Println(RESET)
+	}
+
 	fmt.Println("  Sec     Hz      Total  Err   P90 ms   P99 ms   MAX ms   Part   KV MiB  Disk MiB   Move  Confl  St    Q1    Q2")
 
 	started := begin

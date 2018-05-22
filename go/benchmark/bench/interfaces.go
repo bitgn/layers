@@ -7,7 +7,8 @@ type Launcher interface {
 }
 
 type Description struct {
-	Code  string
-	Name  string
-	Setup string
+	Code        string
+	Name        string
+	Setup       string
+	Explanation string
 }
