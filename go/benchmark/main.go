@@ -13,9 +13,10 @@ var (
 	hz     = flag.Int("hz", 1, "Througput to generate requests at")
 )
 
-var ()
+var buildVersion string
 
 func main() {
+	fmt.Println("Version", buildVersion)
 
 	flag.Parse()
 
