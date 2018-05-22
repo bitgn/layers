@@ -9,7 +9,7 @@ git push
 
 ssh $REMOTE PROJ=$PROJ DEST=$DEST 'bash -s' <<'ENDSSH'
 	set -e
-	cd $GOPATH/src/$PROJ
+	cd $GOPATH/src/$PROJ/go/benchmark
 	git pull
 	make build
 	mv benchcli $DEST
