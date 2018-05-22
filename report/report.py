@@ -191,8 +191,8 @@ config_list = html_list(
     ("<strong>FoundationDB Cluster</strong>", "{0}x <code>{1}</code> nodes ({2} processes total)".format(meta_count, meta_vm, status_processes)),
     ("<strong>Benchmark</strong>", experiment),
     ("Benchmark config", bench_setup),
+    ("Build", "<code>" + meta["build"] + "</code>"),
     ("Arguments", "<code>" + " ".join(meta["args"]) + "</code>"),
-
     ("Test VMs", "{0}x <code>{1}</code>".format(1, meta_tester)),
     ("<strong>Storage</strong>", "{0} {1}".format(status_engine, status_redundancy)),
     ("<strong>Requests per second</strong>", "{0} Hz".format(bench_hz)),
