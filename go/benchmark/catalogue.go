@@ -1,6 +1,8 @@
 package main
 
 import (
+	"flag"
+
 	"github.com/apple/foundationdb/bindings/go/src/fdb"
 	"github.com/apple/foundationdb/bindings/go/src/fdb/tuple"
 	"github.com/bitgn/layers/go/benchmark/bench"
@@ -14,6 +16,8 @@ var (
 	catalogue   = make(map[string]Factory)
 	BitgnPrefix = "bgn"
 	BitgnTuple  = tuple.Tuple{BitgnPrefix}
+
+	denormalize = flag.Bool("denormalize", false, "Denormalize option")
 )
 
 func launch(name string, db fdb.Database) bench.Launcher {
@@ -25,7 +29,7 @@ func launch(name string, db fdb.Database) bench.Launcher {
 	case "custom1":
 		return experiment.NewCustom1Bench(db, BitgnTuple)
 	case "es-v2-append":
-		return experiment.NewEventStoreBench(db, BitgnTuple)
+		return experiment.NewEventStoreBench(db, *denormalize, BitgnTuple)
 	}
 
 	return nil

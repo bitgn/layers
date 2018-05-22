@@ -12,29 +12,33 @@ import (
 )
 
 type EventStore struct {
-	streams   int
-	eventSize int
-	space     subspace.Subspace
-	db        fdb.Database
+	streams     int
+	eventSize   int
+	space       subspace.Subspace
+	db          fdb.Database
+	denormalize bool
 }
 
-func NewEventStoreBench(db fdb.Database, pfx ...tuple.TupleElement) bench.Launcher {
+func NewEventStoreBench(db fdb.Database, denormalize bool, pfx ...tuple.TupleElement) bench.Launcher {
 
 	return &EventStore{
-		streams:   1000000,
-		eventSize: 200,
-		space:     subspace.Sub(pfx...),
-		db:        db,
+		streams:     1000000,
+		eventSize:   200,
+		space:       subspace.Sub(pfx...),
+		db:          db,
+		denormalize: denormalize,
 	}
 }
 
 func (e *EventStore) Describe() *bench.Description {
 	return &bench.Description{
 		Name: "EventStore experimental v2 (go) - es-v2-append",
-		Setup: fmt.Sprintf("event size: %d, streams: %d",
-			e.eventSize, e.streams),
+		Setup: fmt.Sprintf("event size: %d, streams: %d, denormalize: %t",
+			e.eventSize, e.streams, e.denormalize),
 		Explanation: `
 This benchmark simulates appends in an experimental event store. It writes a copy of event into global event stream and a named event stream. Both entries are versionstamped.
+
+If 'denormalize' it true, then we write only an event pointer to the named event stream.
 
 Stream names are in form 'agg-%d', where the number is randomly generated (even distribution). Event size is fixed.
 
@@ -87,19 +91,15 @@ func (b *EventStore) Exec(r uint64) error {
 
 	// add versiontsamp
 
-	contract := tuple.Tuple{"test"}.Pack()
-
 	var gk, sk, offset []byte
 
 	gk = b.space.Sub(globalTable).Bytes()
 	gk, offset = verstamp(gk, 1)
 	// add contract
-	gk = append(gk, contract...)
 	gk = append(gk, offset...)
 
 	sk = b.space.Sub(streamTable, aggName).Bytes()
 	sk, offset = verstamp(sk, 1)
-	sk = append(sk, contract...)
 	sk = append(sk, offset...)
 
 	// TODO: check for the concurrent change
@@ -108,7 +108,12 @@ func (b *EventStore) Exec(r uint64) error {
 
 		vs := tr.GetVersionstamp()
 		tr.SetVersionstampedKey(fdb.Key(gk), data)
-		tr.SetVersionstampedKey(fdb.Key(sk), data)
+
+		if b.denormalize {
+			tr.SetVersionstampedKey(fdb.Key(sk), data)
+		} else {
+			tr.SetVersionstampedKey(fdb.Key(sk), nil)
+		}
 		return vs, nil
 	})
 
