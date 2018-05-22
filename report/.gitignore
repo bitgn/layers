@@ -1,3 +1,4 @@
 *.png
 *.tsv
 bench-*
+__pycache__
