@@ -2,3 +2,4 @@
 *.json
 compile.sh
 benchmark-aws
+benchcli
