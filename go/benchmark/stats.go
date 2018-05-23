@@ -52,7 +52,7 @@ func stats(ms chan metrics, db fdb.Database, hz int, d *bench.Description, comma
 
 	f := createJournal(db, hz, d, command)
 	defer f.Close()
-	printLine(f, "Seconds", "TxTotal", "TxDelta", "ErrDelta", "Hz", "P50", "P90", "P99", "P999", "P100", "Partitions", "KVTotal", "Disk", "Move", "Conflicted", "State", "Queue1", "Queue2")
+	printLine(f, "Seconds", "TxTotal", "TxDelta", "ErrDelta", "Hz", "P50", "P90", "P99", "P999", "P100", "Partitions", "KVTotal", "Disk", "Move", "Conflicted", "State", "Queue1", "Queue2", "Time")
 
 	fmt.Printf("Running %s at %d Hz: %s\n", d.Name, hz, d.Setup)
 
@@ -143,6 +143,7 @@ func stats(ms chan metrics, db fdb.Database, hz int, d *bench.Description, comma
 				//latencyTotal.ValueAtQuantile(100),
 				waitingRequests,
 				pendingRequests,
+				t.Format(time.RFC3339),
 			)
 			// TODO: gather cluster size
 
@@ -152,7 +153,7 @@ func stats(ms chan metrics, db fdb.Database, hz int, d *bench.Description, comma
 		case m := <-ms:
 			ms := m.nanoseconds / int64(time.Millisecond)
 			latencyMs.RecordValue(ms)
-			// latencyTotal.RecordValue(ms)
+			//latencyTotal.RecordValue(ms)
 			if m.error {
 				errDelta++
 				errTotal++
