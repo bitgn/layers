@@ -47,9 +47,20 @@ meta_tester = meta["cluster"]["tester_type"]
 experiment = meta["bench-name"]
 bench_setup = meta["bench-setup"]
 bench_hz = meta["bench-hz"]
-setup =  """FDB: {0}x {1}, {2} {3}; tester: 1x {4} ({7} procs) - at {5} Hz
+
+if bench_hz < 0:
+    speed = "{0} actors".format(-bench_hz)
+    bench_concurrency = speed
+    bench_throughput = "adaptive"
+else:
+    speed = "{0} Hz".format(bench_hz)
+    bench_concurrency = "adaptive"
+    bench_throughput = speed
+
+
+setup =  """FDB: {0}*{1} ({7} procs), {2} {3}; load: 1*{4} - {5}
 {6}""".format(meta_count, meta_vm, status_engine, status_redundancy, meta_tester,
-              bench_hz,
+              speed,
               bench_setup,
               status_processes
 )
@@ -74,6 +85,7 @@ df = pd.read_table(tsv_file)
 # skip first row
 df = df.drop(df.index[0])
 
+print("Median Hz: {0}".format(df["Hz"].median()))
 
 
 fig, axs = plt.subplots(2, sharex = True)
@@ -86,6 +98,8 @@ ax.set_ylabel("Transactions per sec")
 
 ax.plot(df["Seconds"],df["Hz"])
 ax.set_ylim(bottom=0)
+
+
 # fig.savefig("throughput.png")
 #plt.close(fig)
 #print("Saved throughput.png")
@@ -123,7 +137,6 @@ ax.set_xlabel("Seconds")
 fig.savefig(rel("summary.png"))
 plt.close(fig)
 
-print("Saved summary.png")
 
 
 ### DATA CHART
@@ -155,9 +168,6 @@ ax.set_xlabel("Seconds")
 fig.savefig(rel("data.png"))
 plt.close(fig)
 
-
-
-print("Saved data.png")
 
 
 fig, axs = plt.subplots(2, sharex = True)
@@ -197,8 +207,8 @@ config_list = html_list(
     ("<strong>Benchmark</strong>", experiment),
     ("<strong>FoundationDB Cluster</strong>", "{0}x <code>{1}</code> nodes ({2} processes total)".format(meta_count, meta_vm, status_processes)),
     ("<strong>Storage</strong>", "{0} {1}".format(status_engine, status_redundancy)),
-
-    ("<strong>Requests per second</strong>", "{0} Hz".format(bench_hz)),
+    ("<strong>Throughput</strong> per tester", bench_throughput),
+    ("<strong>Concurrency</strong> per tester", bench_concurrency),
     ("Benchmark config", bench_setup),
     ("Arguments", "<code>" + " ".join(meta["args"]) + "</code>"),
     ("Build", "<code>" + build + "</code>"),
