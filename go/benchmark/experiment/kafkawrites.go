@@ -29,7 +29,7 @@ func NewKafkaBench(db fdb.Database, pfx ...tuple.TupleElement) bench.Launcher {
 
 func (e *KafkaBench) Describe() *bench.Description {
 	return &bench.Description{
-		Name: "Kafka-like pub (go) - kafka-writes",
+		Name: "Kafka-like Publish Benchmark (go)",
 		Setup: fmt.Sprintf("message: %d, bytes topics: %d",
 			e.messageSize, e.topics),
 		Explanation: fmt.Sprintf(`
