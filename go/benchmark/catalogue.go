@@ -22,6 +22,8 @@ var (
 
 func launch(name string, db fdb.Database) bench.Launcher {
 	switch name {
+	case "kafka":
+		return experiment.NewKafkaBench(db, BitgnTuple)
 	case "simple":
 		return NewSimpleBench(db, *writes, BitgnTuple)
 	case "es-append":
