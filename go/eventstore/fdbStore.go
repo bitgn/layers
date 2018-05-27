@@ -135,10 +135,10 @@ func (es *fdbStore) ReadAll(last []byte, limit int) *GlobalSlice {
 
 		var scan fdb.KeyRange
 		if nil == last {
-			scan = fdb.KeyRange{start, end}
+			scan = fdb.KeyRange{Begin: start, End: end}
 		} else {
 			next := tr.Snapshot().GetKey(fdb.FirstGreaterThan(fdb.Key(last))).MustGet()
-			scan = fdb.KeyRange{next, end}
+			scan = fdb.KeyRange{Begin: next, End: end}
 		}
 
 		rr := tr.Snapshot().GetRange(scan, fdb.RangeOptions{Limit: limit})
@@ -172,7 +172,12 @@ func (es *fdbStore) ReadAllFromAggregate(stream string) []AggregateEvent {
 	streamSpace := es.space.Sub(aggregPrefix, stream)
 	r, err := es.db.ReadTransact(func(tr fdb.ReadTransaction) (interface{}, error) {
 
-		rr := tr.Snapshot().GetRange(streamSpace, fdb.RangeOptions{0, fdb.StreamingModeWantAll, false})
+		r := fdb.RangeOptions{
+			Limit:   0,
+			Mode:    fdb.StreamingModeWantAll,
+			Reverse: false,
+		}
+		rr := tr.Snapshot().GetRange(streamSpace, r)
 		return rr.GetSliceOrPanic(), nil
 
 	})

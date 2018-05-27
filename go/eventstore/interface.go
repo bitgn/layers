@@ -2,9 +2,9 @@ package events
 
 type Store interface {
 	ReadAll(last []byte, limit int) *GlobalSlice
-	ReadAllFromAggregate(aggregId string) []AggregateEvent
+	ReadAllFromAggregate(stream string) []AggregateEvent
 	Clear()
-	AppendToAggregate(aggregId string, expectedVersion int, records []Envelope) (err error)
+	AppendToAggregate(stream string, expectedVersion int, records []Envelope) (err error)
 	Append(records []Envelope) (err error)
 }
 
