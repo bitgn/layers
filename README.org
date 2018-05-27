@@ -1,3 +1,42 @@
+* Benchmarking
+
+
+Currently the benchmark is done by compiling [[go/benchmark/][golang binary]] and copying
+it to the target load tester machine. I'm using the one with the
+[[var%20(%0A%09jsonKey%20=%20append(%5B%5Dbyte{255,%20255},%20%5B%5Dbyte("/status/json")...)%0A)%0A][pre-baked FDB cluster on AWS]].
+
+This works fine, however there are limitations:
+
+- Benchmark tool is hard to port to the other languages (coupled with
+  the golang).
+- FDB apps are limited by the throughput of the single networking
+  thread of `fdb_c` native library, so you need to run multiple
+  clients against larger clients; current bench can run in parallel,
+  but doesn't aggregate the results.
+
+
+I think, one of the approaches would be to break the current bench
+into the following parts:
+
+- *load generator* - a simple native app that does the work and pushes
+  telemetry;
+- *FDB statistics collector* - a simple app that pushes telemetry
+  about the FDB (to be replaced with some native solution);
+- Prometheus/InfluxDB - to gather all statistics (replacing TSV
+  files);
+- Grafana - chart cluster performance in real-time.
+
+Re Prometheus vs InfluxDB for this case. Prometheus pros:
+
+- better long-term solution;
+- understands histograms and can aggregate them;
+
+InfluxDB pros:
+
+- I've used it for a long time and know how it works;
+- Easy to send custom events (like injected cluster faults).
+
+
 * Event Store Layer
 
 Event store layer is an implementation of append-only log which also
