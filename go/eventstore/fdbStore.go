@@ -76,10 +76,10 @@ func (es *fdbStore) Append(records []Envelope) (err error) {
 	return
 }
 
-func (es *fdbStore) AppendToAggregate(aggregId string, expectedVersion int, records []Envelope) (err error) {
+func (es *fdbStore) AppendToAggregate(stream string, expectedVersion int, records []Envelope) (err error) {
 
 	globalSpace := es.space.Sub(globalPrefix)
-	aggregSpace := es.space.Sub(aggregPrefix, aggregId)
+	aggregSpace := es.space.Sub(aggregPrefix, stream)
 	uuid := NewSequentialUUID()
 	// TODO add random key to reduce contention
 
@@ -97,7 +97,7 @@ func (es *fdbStore) AppendToAggregate(aggregId string, expectedVersion int, reco
 		case ExpectedVersionNone:
 			if nextAggregIndex != 0 {
 				return nil, &ErrConcurrencyViolation{
-					aggregId,
+					stream,
 					expectedVersion,
 					nextAggregIndex - 1,
 				}
@@ -105,7 +105,7 @@ func (es *fdbStore) AppendToAggregate(aggregId string, expectedVersion int, reco
 		default:
 			if (nextAggregIndex - 1) != expectedVersion {
 				return nil, &ErrConcurrencyViolation{
-					aggregId,
+					stream,
 					expectedVersion,
 					nextAggregIndex - 1,
 				}
@@ -168,8 +168,8 @@ func (es *fdbStore) ReadAll(last []byte, limit int) *GlobalSlice {
 	return &GlobalSlice{result, last}
 }
 
-func (es *fdbStore) ReadAllFromAggregate(aggregId string) []AggregateEvent {
-	streamSpace := es.space.Sub(aggregPrefix, aggregId)
+func (es *fdbStore) ReadAllFromAggregate(stream string) []AggregateEvent {
+	streamSpace := es.space.Sub(aggregPrefix, stream)
 	r, err := es.db.ReadTransact(func(tr fdb.ReadTransaction) (interface{}, error) {
 
 		rr := tr.Snapshot().GetRange(streamSpace, fdb.RangeOptions{0, fdb.StreamingModeWantAll, false})
